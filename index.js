@@ -1,70 +1,73 @@
-// << Import/Insert the AgGrid lib  here.>>
-// << For readability purposes it has been removed.>>
+(function () {
+    // Initialize the component when loaded in Unqork
+    Unqork.onInit(function () {
+        const button = document.getElementById('viewJsonButton');
+        const container = document.getElementById('json-container');
 
-export class AgGrid extends HTMLElement {
-  constructor() {
-    super()
-    this.attachShadow({ mode: 'open' })
+        if (!button || !container) {
+            console.error("Error: Required elements 'viewJsonButton' or 'json-container' not found.");
+            return;
+        }
 
-    this.gridOptions = {
-      columnDefs: [],
-      rowData: [],
-    }
-  }
+        // Add event listener to the button
+        button.addEventListener('click', displayCurrentUser);
 
-  initialize(initialConfig, api) {
-    this.config = initialConfig
-    this.api = api
+        function displayCurrentUser() {
+            console.log('Attempting to display current user data...');
+            try {
+                // Fetch data from Unqork's submission data
+                const jsonData = Unqork.getSubmissionData().currentUser;
 
-    this.renderGrid(this.shadowRoot, this.gridOptions)
-    this.subscribeColumnDefs()
-    this.subscribeData()
-  }
+                if (!jsonData) {
+                    container.innerHTML = "Could not find 'currentUser' data. The object might be empty or unavailable.";
+                    console.warn("The path 'Unqork.getSubmissionData().currentUser' returned null or undefined.");
+                    return;
+                }
 
-  subscribeColumnDefs() {
-    this.api.state.resolveByKey$(this.config.args.columnDefs).subscribe((columnDefs) => {
-      this.gridOptions = {
-        rowData: this.gridOptions.rowData,
-        columnDefs: columnDefs.value || [],
-      }
-      this.updateGrid(this.gridOptions)
-    })
-  }
+                // Render the JSON tree view
+                container.innerHTML = createJsonTreeView(jsonData);
 
-  subscribeData() {
-    this.api.state.resolveByKey$(this.config.args.value).subscribe((rowData) => {
-      this.gridOptions = {
-        rowData: rowData.value || [],
-        columnDefs: this.gridOptions.columnDefs,
-      }
-      this.updateGrid(this.gridOptions)
-    })
-  }
+                // Remove existing listeners to prevent duplicates
+                container.replaceWith(container.cloneNode(true));
+                const newContainer = document.getElementById('json-container');
+                newContainer.addEventListener('click', handleTreeClick);
+            } catch (error) {
+                container.innerHTML = "An error occurred while fetching the data.";
+                console.error("Error fetching or parsing JSON data:", error);
+            }
+        }
 
-  updateGrid(gridOptions) {
-    console.log('Updating AG Grid', gridOptions)
-    this.gridApi.updateGridOptions(gridOptions)
-  }
+        function createJsonTreeView(data) {
+            let html = '';
+            for (const key in data) {
+                if (Object.prototype.hasOwnProperty.call(data, key)) {
+                    const value = data[key];
+                    const isObject = typeof value === 'object' && value !== null;
+                    html += `<div class="json-item">`;
+                    if (isObject) {
+                        const objectType = Array.isArray(value) ? 'Array' : 'Object';
+                        const itemCount = Object.keys(value).length;
+                        html += `<span class="json-key json-collapsible">${key}</span>: <span class="json-value">${objectType}(${itemCount})</span>`;
+                        html += `<div class="json-content">${createJsonTreeView(value)}</div>`;
+                    } else {
+                        html += `<span class="json-key">${key}: </span>`;
+                        html += `<span class="json-value">${JSON.stringify(value)}</span>`;
+                    }
+                    html += `</div>`;
+                }
+            }
+            return html;
+        }
 
-  async renderGrid(document, gridOptions) {
-    console.log('Rendering AG Grid component', gridOptions)
-
-    document.innerHTML = this.view()
-    this.gridEl = document.querySelector('#myGrid')
-    this.gridApi = agGrid.createGrid(this.gridEl, gridOptions)
-    console.log('Created AG Grid', {
-      document,
-      gridOptions,
-      gridEl: this.gridEl,
-      gridApi: this.gridApi,
-    })
-  }
-
-  view() {
-    return `
-      <div id="myGrid" style="height: 500px"></div>
-    `
-  }
-}
-
-export default AgGrid
+        function handleTreeClick(event) {
+            const target = event.target;
+            if (target.classList.contains('json-collapsible')) {
+                target.classList.toggle('expanded');
+                const content = target.parentElement.querySelector('.json-content');
+                if (content) {
+                    content.classList.toggle('show');
+                }
+            }
+        }
+    });
+})();

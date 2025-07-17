@@ -1,0 +1,40 @@
+{
+  "id": "jsonViewerComponent",
+  "name": "Hierarchical JSON Viewer",
+  "version": "1.0.0",
+  "description": "A component that displays a collapsible hierarchical view of JSON data, such as currentUser, with a button to trigger rendering.",
+  "category": "Custom",
+  "icon": "fa fa-code",
+  "resources": {
+    "scripts": [
+      "https://json-viewer.tiiny.site"
+    ],
+    "styles": []
+  },
+  "inputs": [
+    {
+      "id": "dataSource",
+      "label": "Data Source Property ID",
+      "type": "text",
+      "description": "The property ID of the JSON data to display (e.g., 'currentUser' for submission.data.currentUser).",
+      "default": "currentUser"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "onNodeClick",
+      "label": "On Node Click",
+      "type": "event",
+      "description": "Triggered when a collapsible node is clicked, passing the node key."
+    }
+  ],
+  "settings": [
+    {
+      "id": "buttonLabel",
+      "label": "Button Label",
+      "type": "text",
+      "description": "The label for the button that triggers the JSON data display.",
+      "default": "View Current User Data"
+    }
+  ]
+}
